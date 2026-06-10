@@ -1,0 +1,22 @@
+# clangd config for ESP-IDF (xtensa) builds.
+#
+# neovim's clangd reads build/compile_commands.json, which is full of
+# xtensa GCC flags. clangd is LLVM-based and rejects GCC-only flags, so we
+# strip them here and let clangd interrogate the real toolchain for headers.
+CompileFlags:
+  CompilationDatabase: build
+  Remove:
+    - -mlongcalls
+    - -mtext-section-literals
+    - -fno-shrink-wrap
+    - -fno-tree-switch-conversion
+    - -fstrict-volatile-bitfields
+    - -free
+    - -fipa-pta
+  Add:
+    - -Wno-unknown-warning-option
+
+Diagnostics:
+  # ESP-IDF leans on GNU extensions; silence the noisy ones in the editor.
+  Suppress:
+    - -Wgnu-zero-variadic-macro-arguments
