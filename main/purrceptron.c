@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include "buttons.h"
-#include "log.h"
+#include "esp_log.h"
 
 static const char *TAG = "PURRCEPTRON";
 
@@ -31,12 +31,13 @@ static const char *TAG = "PURRCEPTRON";
 
 void init_tasks(void)
 {
-    logi(TAG, "Initializing tasks...");
+    ESP_LOGI(TAG, "Initializing tasks...");
     // Initialize your tasks here
+    ESP_ERROR_CHECK(init_buttons());
 }
 
 void app_main(void)
 {
-    logi(TAG, "Starting project...");
+    ESP_LOGI(TAG, "Starting project...");
     init_tasks();
 }
