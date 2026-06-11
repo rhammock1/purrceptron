@@ -1,6 +1,7 @@
 #include <stdio.h>
-#include "buttons.h"
 #include "esp_log.h"
+#include "buttons.h"
+#include "ssd1306.h"
 
 static const char *TAG = "PURRCEPTRON";
 
@@ -34,6 +35,12 @@ void init_tasks(void)
     ESP_LOGI(TAG, "Initializing tasks...");
     // Initialize your tasks here
     ESP_ERROR_CHECK(init_buttons());
+
+    if(init_ssd1306() == ESP_OK) { // optional peripheral
+        ESP_LOGI(TAG, "SSD1306 initialized successfully in main");
+    } else {
+        ESP_LOGW(TAG, "Failed to initialize SSD1306 in main");
+    }
 }
 
 void app_main(void)
