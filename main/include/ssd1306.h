@@ -18,8 +18,8 @@ static const uint8_t INIT_CMDS[] = {
     0x40,        // start line 0
     0x8D, 0x14,  // charge pump ON (omit this == blank screen)
     0x20, 0x00,  // memory addressing mode: horizontal
-    0xA1,        // segment remap (col 127 -> SEG0) -> not mirrored L/R
-    0xC8,        // COM output scan direction remapped -> not upside down
+    0xA0,        // segment remap (col 0 -> SEG0) -> flipped L/R
+    0xC0,        // COM output scan direction normal -> flipped top/bottom
     0xDA, 0x12,  // COM pins config (alt, 64-row panel)
     0x81, 0xCF,  // contrast
     0xD9, 0xF1,  // pre-charge period
@@ -40,5 +40,6 @@ void ssd1306_clear(void);
 esp_err_t ssd1306_flush(void);
 void ssd1306_draw_pixel(uint8_t x, uint8_t y, bool on);
 void ssd1306_draw_vline(uint8_t x, uint8_t y0, uint8_t y1);
+void ssd1306_draw_text(uint8_t x, uint8_t y, const char *string);
 
 
