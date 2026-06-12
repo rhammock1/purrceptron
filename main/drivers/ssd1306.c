@@ -46,6 +46,33 @@ esp_err_t ssd1306_flush(void)
     return i2c_master_transmit(ssd1306_dev, transmit_buffer, sizeof(transmit_buffer), pdMS_TO_TICKS(OLED_I2C_TIMEOUT_MS));
 }
 
+void ssd1306_draw_pixel(uint8_t x, uint8_t y, bool on)
+{
+    if(x >= SSD1306_WIDTH || y >= SSD1306_HEIGHT) {
+        return; // out of bounds
+    }
+    uint16_t framebuffer_byte_index = (y / 8) * SSD1306_WIDTH + x;
+    uint8_t bit_position = 1u << (y & 7); // which row within the page
+
+    if(on) {
+        framebuffer[framebuffer_byte_index] |= bit_position;
+    } else {
+        framebuffer[framebuffer_byte_index] &= ~bit_position;
+    }
+}
+
+void ssd1306_draw_vline(uint8_t x, uint8_t y0, uint8_t y1)
+{
+    if(y1 < y0) {
+      uint8_t temp = y0;
+      y0 = y1;
+      y1 = temp;
+    }
+    for(uint8_t y = y0; y <= y1; y++) {
+        ssd1306_draw_pixel(x, y, true);
+    }
+}
+
 esp_err_t init_ssd1306(void)
 {
     i2c_master_bus_config_t bus_config = {
@@ -88,7 +115,25 @@ esp_err_t init_ssd1306(void)
     }
 
     // TEMP
-    memset(framebuffer, 0xFF, SSD1306_BUFFER_SIZE); // fill screen for testing
+    ssd1306_clear();
+    for(uint8_t x = 0; x < SSD1306_WIDTH; x++) {
+      // bottom + top edges
+      ssd1306_draw_pixel(x, 0, true);
+      ssd1306_draw_pixel(x, SSD1306_HEIGHT - 1, true);
+    }
+    for(uint8_t y = 0; y < SSD1306_HEIGHT; y++) {
+      // left + right edges
+      ssd1306_draw_pixel(0, y, true);
+      ssd1306_draw_pixel(SSD1306_WIDTH - 1, y, true);
+    }
+    for(uint8_t x = 2; x < SSD1306_WIDTH - 2; x++) {
+      // checkerboard pattern
+      for(uint8_t y = 2; y < SSD1306_HEIGHT - 2; y++) {
+        if(((x ^ y) & 1) == 0) {
+          ssd1306_draw_pixel(x, y, true);
+        }
+      }
+    }
     err = ssd1306_flush();
     if(err != ESP_OK) {
         ESP_LOGE(TAG, "Failed to flush framebuffer to SSD1306: %s", esp_err_to_name(err));

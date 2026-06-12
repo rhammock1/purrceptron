@@ -38,4 +38,7 @@ esp_err_t init_ssd1306(void);
 
 void ssd1306_clear(void);
 esp_err_t ssd1306_flush(void);
+void ssd1306_draw_pixel(uint8_t x, uint8_t y, bool on);
+void ssd1306_draw_vline(uint8_t x, uint8_t y0, uint8_t y1);
+
 
