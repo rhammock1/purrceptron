@@ -75,6 +75,62 @@ void ssd1306_draw_vline(uint8_t x, uint8_t y0, uint8_t y1)
     }
 }
 
+void ssd1306_fill_circle(uint8_t cx, uint8_t cy, uint8_t r)
+{
+    int16_t x = r;
+    int16_t y = 0;
+    int16_t err = 1 - r; // midpoint circle decision variable
+
+    while(x >= y) {
+        // each octant pair becomes a vertical span -> a solid disc
+        ssd1306_draw_vline(cx + x, cy - y, cy + y);
+        ssd1306_draw_vline(cx - x, cy - y, cy + y);
+        ssd1306_draw_vline(cx + y, cy - x, cy + x);
+        ssd1306_draw_vline(cx - y, cy - x, cy + x);
+        y++;
+        if(err < 0) {
+            err += 2 * y + 1;
+        } else {
+            x--;
+            err += 2 * (y - x) + 1;
+        }
+    }
+}
+
+static void bounce_demo_task(void *arg)
+{
+    const uint8_t r = 5;            // dot radius
+    const uint8_t min_x = r;        // keep the whole dot on-screen so the
+    const uint8_t max_x = SSD1306_WIDTH - 1 - r;  // int16 -> uint8 math in
+    const uint8_t min_y = r;        // fill_circle never wraps past an edge
+    const uint8_t max_y = SSD1306_HEIGHT - 1 - r;
+
+    int16_t x = min_x, y = min_y;   // position
+    int16_t vx = 2, vy = 1;         // velocity (px/frame)
+
+    while(1) {
+        x += vx;
+        y += vy;
+
+        // bounce: clamp back inside the box and reverse on contact
+        if(x <= min_x) { x = min_x; vx = -vx; }
+        if(x >= max_x) { x = max_x; vx = -vx; }
+        if(y <= min_y) { y = min_y; vy = -vy; }
+        if(y >= max_y) { y = max_y; vy = -vy; }
+
+        ssd1306_clear();
+        ssd1306_fill_circle((uint8_t)x, (uint8_t)y, r);
+        ssd1306_flush();
+
+        vTaskDelay(pdMS_TO_TICKS(33)); // ~30 fps
+    }
+}
+
+void ssd1306_start_bounce_demo(void)
+{
+    xTaskCreate(bounce_demo_task, "oled_bounce", 2048, NULL, 4, NULL);
+}
+
 void ssd1306_draw_text(uint8_t x, uint8_t y, const char *string)
 {
     for(; *string; string++) {

@@ -40,6 +40,10 @@ void ssd1306_clear(void);
 esp_err_t ssd1306_flush(void);
 void ssd1306_draw_pixel(uint8_t x, uint8_t y, bool on);
 void ssd1306_draw_vline(uint8_t x, uint8_t y0, uint8_t y1);
+void ssd1306_fill_circle(uint8_t cx, uint8_t cy, uint8_t r);
 void ssd1306_draw_text(uint8_t x, uint8_t y, const char *string);
+
+// fun demo: spawns a background task that bounces a dot around the screen
+void ssd1306_start_bounce_demo(void);
 
 

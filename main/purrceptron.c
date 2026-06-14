@@ -38,6 +38,7 @@ void init_tasks(void)
 
     if(init_ssd1306() == ESP_OK) { // optional peripheral
         ESP_LOGI(TAG, "SSD1306 initialized successfully in main");
+        ssd1306_start_bounce_demo(); // TEMP: fun to watch while building out the rest
     } else {
         ESP_LOGW(TAG, "Failed to initialize SSD1306 in main");
     }
