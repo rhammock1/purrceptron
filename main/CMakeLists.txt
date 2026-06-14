@@ -3,5 +3,6 @@ idf_component_register(
           "ui.c"
          "drivers/buttons.c"
          "drivers/ssd1306.c"
+         "drivers/inmp441.c"
     INCLUDE_DIRS "." "include"
 )
