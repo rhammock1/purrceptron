@@ -11,7 +11,7 @@
 
 static const char *TAG = "BUTTON";
 
-#define DEBOUNCE_TIME_MS 100
+#define DEBOUNCE_TIME_MS 250
 #define BUTTON_PIN_MASK ( (1ULL << KITTY_LABEL_PIN) | \
                           (1ULL << TODD_LABEL_PIN) | \
                           (1ULL << LADY_LABEL_PIN) | \
