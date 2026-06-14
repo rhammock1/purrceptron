@@ -1,7 +1,13 @@
 #include <stdio.h>
+#include <string.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "esp_log.h"
 #include "buttons.h"
 #include "ssd1306.h"
+#include "inmp441.h"
+#include "microsd.h"
+#include "ui.h"
 
 static const char *TAG = "PURRCEPTRON";
 
@@ -38,7 +44,11 @@ void init_tasks(void)
 
     if(init_ssd1306() == ESP_OK) { // optional peripheral
         ESP_LOGI(TAG, "SSD1306 initialized successfully in main");
-        ssd1306_start_bounce_demo(); // TEMP: fun to watch while building out the rest
+        // Pin to core 1 so the ~23ms I2C flush doesn't compete with future
+        // I2S/audio processing that we'll pin to core 0.
+        xTaskCreatePinnedToCore(display_task, "display_task", 4096, NULL, 5, NULL, 1);
+        ESP_LOGI(TAG, "Started display task on core 1");
+        // ssd1306_start_bounce_demo(); // TEMP: fun to watch while building out the rest
     } else {
         ESP_LOGW(TAG, "Failed to initialize SSD1306 in main");
     }
