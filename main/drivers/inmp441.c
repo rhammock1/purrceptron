@@ -2,16 +2,45 @@
 #include "freertos/task.h"
 #include "driver/i2s_std.h"
 #include "esp_log.h"
+#include "portmacro.h"
 #include "inmp441.h"
 
 // INMP441: 24 valid bits MSB aligned in a 32bit word.
 // shift right by 16 takes the top 16 bits.
-#define RAW_SHIFT 16
+#define RAW_SHIFT 11
 #define GAIN 1
 
 static const char *TAG = "INMP441";
 
 static i2s_chan_handle_t i2s_rx_channel = NULL;
+// spinlock to protect shared state during mic_rx_task and display_task
+static portMUX_TYPE audio_levels_mux = portMUX_INITIALIZER_UNLOCKED;
+static uint8_t audio_levels[MIC_LEVELS_COUNT];
+// index of the oldest entry / next write slot
+static size_t audio_levels_head;
+
+static void push_level(uint8_t magnitude)
+{
+    portENTER_CRITICAL(&audio_levels_mux);
+    audio_levels[audio_levels_head] = magnitude;
+    audio_levels_head = (audio_levels_head + 1) % MIC_LEVELS_COUNT;
+    portEXIT_CRITICAL(&audio_levels_mux);
+}
+
+size_t inmp441_get_levels(uint8_t *out, size_t n)
+{
+    if(n > MIC_LEVELS_COUNT) {
+        n = MIC_LEVELS_COUNT;
+    }
+    portENTER_CRITICAL(&audio_levels_mux);
+    // Copy the n most-recent entries in chronological order (older-first)
+    size_t start = (audio_levels_head + (MIC_LEVELS_COUNT - n)) % MIC_LEVELS_COUNT;
+    for(size_t i = 0; i < n; i++) {
+        out[i] = audio_levels[(start + i) % MIC_LEVELS_COUNT];
+    }
+    portEXIT_CRITICAL(&audio_levels_mux);
+    return n;
+}
 
 static int16_t convert_sample(int32_t sample)
 {
@@ -49,10 +78,13 @@ static void inmp441_rx_task(void *arg)
                 peak = abs_sample;
             }
         }
+        // Normalize peak (0..32767) to a 0.255 magnitude and push to the ring
+        uint8_t magnitude = (uint8_t)(peak >> 7);
+        push_level(magnitude);
 
-        // TEMP: log the peak ~4x/sec
+        // TEMP
         if((log_throttle++ & 0x0F) == 0) {
-            ESP_LOGI(TAG, "Read %u bytes, peak sample = %ld", (unsigned)n, (long)peak);
+            ESP_LOGI(TAG, "level magnitude: %u", (unsigned)magnitude);
         }
     }
 }
