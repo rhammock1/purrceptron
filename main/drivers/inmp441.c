@@ -9,10 +9,12 @@
 // shift right by 16 takes the top 16 bits.
 #define RAW_SHIFT 11
 #define GAIN 1
+#define STREAM_BUFFER_SIZE (CHUNK_FRAMES * sizeof(int16_t) * 4) // enough space for 4 chunks
 
 static const char *TAG = "INMP441";
 
 static i2s_chan_handle_t i2s_rx_channel = NULL;
+static StreamBufferHandle_t pcm_stream_buffer = NULL;
 // spinlock to protect shared state during mic_rx_task and display_task
 static portMUX_TYPE audio_levels_mux = portMUX_INITIALIZER_UNLOCKED;
 static uint8_t audio_levels[MIC_LEVELS_COUNT];
@@ -58,7 +60,6 @@ static void inmp441_rx_task(void *arg)
     (void)arg;
     int32_t raw_buffer[CHUNK_FRAMES];
     int16_t pcm_buffer[CHUNK_FRAMES];
-    uint32_t log_throttle = 0;
 
     for(;;) {
         size_t bytes_read = 0;
@@ -82,11 +83,20 @@ static void inmp441_rx_task(void *arg)
         uint8_t magnitude = (uint8_t)(peak >> 7);
         push_level(magnitude);
 
-        // TEMP
-        if((log_throttle++ & 0x0F) == 0) {
-            ESP_LOGI(TAG, "level magnitude: %u", (unsigned)magnitude);
-        }
+        // Pass converted samples to the stream buffer. 
+        // If full, the newest samples are dropped
+        // timeout of 0 means "don't wait, just drop the data" if the buffer is full, which is what we want to avoid blocking the task and keep it real-time.
+        xStreamBufferSend(pcm_stream_buffer, pcm_buffer, n * sizeof(int16_t), 0);
     }
+}
+
+size_t inmp441_get_pcm(int16_t *out, size_t max_samples, TickType_t timeout)
+{
+    if(pcm_stream_buffer == NULL) {
+        return 0; // not initialized yet
+    }
+    size_t bytes = xStreamBufferReceive(pcm_stream_buffer, out, max_samples * sizeof(int16_t), timeout);
+    return bytes / sizeof(int16_t);
 }
 
 esp_err_t init_inmp441(void)
@@ -133,6 +143,12 @@ esp_err_t init_inmp441(void)
     if(err != ESP_OK) {
         ESP_LOGE(TAG, "Failed to enable I2S channel: %s", esp_err_to_name(err));
         return err;
+    }
+
+    pcm_stream_buffer = xStreamBufferCreate(STREAM_BUFFER_SIZE, sizeof(int16_t));
+    if(pcm_stream_buffer == NULL) {
+        ESP_LOGE(TAG, "Failed to create PCM stream buffer");
+        return ESP_ERR_NO_MEM;
     }
 
     // Always-on reader, pinner to core 0 so DMA servicing
