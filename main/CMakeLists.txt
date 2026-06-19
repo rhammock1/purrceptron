@@ -4,5 +4,6 @@ idf_component_register(
          "drivers/buttons.c"
          "drivers/ssd1306.c"
          "drivers/inmp441.c"
+         "drivers/microsd.c"
     INCLUDE_DIRS "." "include"
 )

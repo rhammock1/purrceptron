@@ -42,6 +42,7 @@ void init_tasks(void)
     // Initialize your tasks here
     ESP_ERROR_CHECK(init_buttons());
     ESP_ERROR_CHECK(init_inmp441());
+    ESP_ERROR_CHECK(init_microsd());
 
     if(init_ssd1306() == ESP_OK) { // optional peripheral
         ESP_LOGI(TAG, "SSD1306 initialized successfully in main");
