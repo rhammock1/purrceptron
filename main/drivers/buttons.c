@@ -5,9 +5,10 @@
 #include "freertos/queue.h"
 #include "driver/gpio.h"
 #include "esp_timer.h"
-#include "buttons.h"
 #include "esp_log.h"
 #include "portmacro.h"
+#include "buttons.h"
+#include "cats.h"
 
 static const char *TAG = "BUTTON";
 
@@ -18,19 +19,8 @@ static const char *TAG = "BUTTON";
                           (1ULL << ROXY_LABEL_PIN) | \
                           (1ULL << RECORD_BUTTON_PIN) )
 
-static const char *CAT_NAMES[] = {
-   [CAT_NONE] = "None",
-   [CAT_KITTY] = "Kitty",
-   [CAT_TODD] = "Todd",
-   [CAT_LADY] = "Lady",
-   [CAT_ROXY] = "Roxy",
-};
-
 static QueueHandle_t button_event_queue = NULL;
 
-// state variables
-static cat_label_t selected_cat = CAT_NONE;
-static bool recording = false;
 // last press times for debouncing
 static int64_t last_press_time[5] = {0}; // 4 cats + record button
 
@@ -44,55 +34,6 @@ static int pin_to_index(uint32_t pin)
         case ROXY_LABEL_PIN:    return 3;
         case RECORD_BUTTON_PIN: return 4;
         default:                return -1;
-    }
-}
-
-cat_label_t get_selected_cat(void)
-{
-   if (selected_cat < CAT_NONE || selected_cat > CAT_ROXY) {
-      return CAT_NONE;
-   }
-    return selected_cat;
-}
-
-bool is_recording(void)
-{
-    return recording;
-}
-
-const char *cat_label_to_string(cat_label_t label)
-{
-   if (label < CAT_NONE || label > CAT_ROXY) {
-      return "Unknown";
-   }
-    return CAT_NAMES[label];
-}
-
-static void set_label(cat_label_t label)
-{
-    if(recording) {
-        ESP_LOGW(TAG, "Cannot change label while recording. Stop recording first.");
-        return;
-    } else if(selected_cat == label) {
-        ESP_LOGI(TAG, "Label already selected: %s, setting to NONE", cat_label_to_string(label));
-        selected_cat = CAT_NONE;
-        return;
-    }
-    selected_cat = label;
-    ESP_LOGI(TAG, "Selected cat: %s", cat_label_to_string(label));
-}
-
-static void set_recording(void)
-{
-    if(selected_cat == CAT_NONE) {
-        ESP_LOGW(TAG, "No cat selected, cannot start recording");
-        return;
-    }
-    recording = !recording;
-    if(recording) {
-        ESP_LOGI(TAG, "Recording STARTED for cat: %s", cat_label_to_string(selected_cat));
-    } else {
-        ESP_LOGI(TAG, "Recording STOPPED for cat: %s", cat_label_to_string(selected_cat));
     }
 }
 
@@ -121,9 +62,9 @@ static void button_task(void *arg)
             }
             last_press_time[idx] = now;
             if(gpio_num == RECORD_BUTTON_PIN) {
-                set_recording();
+                toggle_recording();
             } else {
-                set_label((cat_label_t)(idx + 1)); // idx 0-3 maps to CAT_KITTY - CAT_ROXY
+                select_cat((cat_label_t)(idx + 1)); // idx 0-3 maps to CAT_KITTY - CAT_ROXY
             }
         }
     }

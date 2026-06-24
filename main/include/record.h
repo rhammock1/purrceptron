@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 #include "esp_err.h"
-#include "buttons.h" // cat_label_t
+#include "cats.h" // cat_label_t
 
 // Call after init_microsd and init_inmp441 so that the SD card is mounted and mic is ready to record.
 // Scans /{cat}/ folders to seed clip counters
