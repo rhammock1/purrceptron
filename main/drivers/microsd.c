@@ -67,7 +67,7 @@ esp_err_t microsd_close(FILE *file)
     return ESP_OK;
 }
 
-size_t microsd_count_file(const char *path)
+size_t microsd_count_files(const char *path)
 {
     char full_path[64];
     build_path(full_path, sizeof(full_path), path);
@@ -99,7 +99,7 @@ static esp_err_t microsd_selftest(void)
         if (err != ESP_OK) {
             return err;
         }
-        size_t count = microsd_count_file("/selftest");
+        size_t count = microsd_count_files("/selftest");
         ESP_LOGI(TAG, "Wrote %u bytes to test file. Counted %u files in /selftest", written, count);
     } else {
         ESP_LOGE(TAG, "Failed to open test file for writing");
