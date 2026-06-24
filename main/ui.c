@@ -2,6 +2,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
+#include "record.h"
 #include "ui.h"
 
 static const char *TAG = "UI";
@@ -11,8 +12,7 @@ static const char *TAG = "UI";
 
 uint8_t get_clip_count(cat_label_t label)
 {
-    (void)label; // TODO: implement this function to return the number of existing audio clips for the given cat label, so we can show the count on the OLED and use it for naming new clips when recording
-    return 0;
+    return (uint8_t)record_get_clip_count(label);
 }
 
 
