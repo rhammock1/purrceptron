@@ -1,3 +1,7 @@
+#include <string.h>
+#include <errno.h>
+#include <sys/stat.h>
+#include <dirent.h>
 #include "esp_log.h"
 #include "esp_vfs_fat.h"
 #include "sdmmc_cmd.h"
@@ -8,6 +12,77 @@
 static const char *TAG = "MICROSD";
 
 static sdmmc_card_t *card = NULL;
+
+static void build_path(char *out, size_t out_size, const char *path)
+{
+    // /sdcard is the mount point, and all paths should 
+    // start with '/'
+    snprintf(out, out_size, "%s%s", MICROSD_MOUNT_POINT, path);
+}
+
+esp_err_t microsd_mkdir(const char *path)
+{
+    char full_path[64];
+    build_path(full_path, sizeof(full_path), path);
+    ESP_LOGI(TAG, "Creating directory: %s", full_path);
+    if (mkdir(full_path, 0775) != 0 && errno != EEXIST) {
+        ESP_LOGE(TAG, "Failed to create directory %s: %s", full_path, strerror(errno));
+        return ESP_FAIL;
+    }
+    return ESP_OK;
+}
+
+FILE *microsd_open(const char *path, const char *mode)
+{
+    char full_path[64];
+    build_path(full_path, sizeof(full_path), path);
+    FILE *file = fopen(full_path, mode);
+    if (file == NULL) {
+        ESP_LOGE(TAG, "Failed to open file %s: %s", full_path, strerror(errno));
+    }
+    return file;
+}
+
+size_t microsd_write(FILE *file, const void *data, size_t len)
+{
+    return fwrite(data, 1, len, file);
+}
+
+esp_err_t microsd_seek(FILE *file, long offset, int whence)
+{
+    if (fseek(file, offset, whence) != 0) {
+        ESP_LOGE(TAG, "Failed to seek in file: %s", strerror(errno));
+        return ESP_FAIL;
+    }
+    return ESP_OK;
+}
+
+esp_err_t microsd_close(FILE *file)
+{
+    if (fclose(file) != 0) {
+        ESP_LOGE(TAG, "Failed to close file: %s", strerror(errno));
+        return ESP_FAIL;
+    }
+    return ESP_OK;
+}
+
+size_t microsd_count_file(const char *path)
+{
+    char full_path[64];
+    build_path(full_path, sizeof(full_path), path);
+    DIR *dir = opendir(full_path);
+    if (dir == NULL) {
+        ESP_LOGW(TAG, "Likely that directory %s does not exist: %s", full_path, strerror(errno));
+        return 0;
+    }
+
+    size_t count = 0;
+    while(readdir(dir) != NULL) {
+        count++;
+    }
+    closedir(dir);
+    return count;
+}
 
 esp_err_t init_microsd(void)
 {
@@ -49,6 +124,26 @@ esp_err_t init_microsd(void)
     }
     ESP_LOGI(TAG, "Filesystem mounted at %s", MICROSD_MOUNT_POINT);
     sdmmc_card_print_info(stdout, card); // logs name, type, capacity, etc.
+
+    // TEMP
+    err = microsd_mkdir("/selftest");
+    if(err != ESP_OK) {
+        return err;
+    }
+    FILE *test_file = microsd_open("/selftest/test.txt", "w");
+    if (test_file != NULL) {
+        const char *msg = "Hello, MicroSD!";
+        size_t written = microsd_write(test_file, msg, strlen(msg));
+        err = microsd_close(test_file);
+        if (err != ESP_OK) {
+            return err;
+        }
+        size_t count = microsd_count_file("/selftest");
+        ESP_LOGI(TAG, "Wrote %u bytes to test file. Counted %u files in /selftest", written, count);
+    } else {
+        ESP_LOGE(TAG, "Failed to open test file for writing");
+        return ESP_FAIL;
+    }
 
     return ESP_OK;
 }
