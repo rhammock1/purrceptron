@@ -11,6 +11,8 @@ typedef enum {
     CAT_ROXY
 } cat_label_t;
 
+extern const char *CAT_FOLDER_LABELS[];
+
 cat_label_t get_selected_cat(void);
 
 const char *cat_label_to_string(cat_label_t label);

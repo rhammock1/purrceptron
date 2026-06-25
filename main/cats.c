@@ -11,6 +11,14 @@ static const char *CAT_NAMES[] = {
    [CAT_ROXY] = "Roxy",
 };
 
+// Lowercase folder names for each cat label
+const char *CAT_FOLDER_LABELS[] = {
+    [CAT_KITTY] = "kitty",
+    [CAT_TODD] = "todd",
+    [CAT_LADY] = "lady",
+    [CAT_ROXY] = "roxy"
+};
+
 // state variables
 static bool recording = false;
 static cat_label_t selected_cat = CAT_NONE;
