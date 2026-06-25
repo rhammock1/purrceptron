@@ -205,7 +205,7 @@ esp_err_t ssd1306_draw_splashscreen(void)
         ESP_LOGE(TAG, "Failed to flush splash screen to SSD1306: %s", esp_err_to_name(err));
         return err;
     }
-    vTaskDelay(pdMS_TO_TICKS(3000));
+    vTaskDelay(pdMS_TO_TICKS(1500));
     ssd1306_clear();
     err = ssd1306_flush();
     if(err != ESP_OK) {
