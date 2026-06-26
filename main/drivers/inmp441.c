@@ -68,12 +68,19 @@ static void inmp441_rx_task(void *arg)
             ESP_LOGW(TAG, "Failed to read from I2S channel: %s", esp_err_to_name(err));
             continue;
         }
-        size_t n = bytes_read / sizeof(int32_t);
+        size_t words_read = bytes_read / sizeof(int32_t);
 
+        // The INMP441 only drives the LEFT slot (its L/R pin is tied to GND),
+        // but the ESP32 I2S RX still clocks both slots into the DMA buffer, so
+        // every odd word is the empty right channel. Keep only the left (even)
+        // words to build a true mono stream at SAMPLE_RATE. If we kept every
+        // word the clip would hold 2x the samples (half of them zeros) and play
+        // back an octave too low.
         int32_t peak = 0;
-        for(size_t i = 0; i < n; i++) {
-            int16_t pcm_sample = convert_sample(raw_buffer[i]);
-            pcm_buffer[i] = pcm_sample;
+        size_t sample_count = 0;
+        for(size_t word_index = 0; word_index < words_read; word_index += 2) {
+            int16_t pcm_sample = convert_sample(raw_buffer[word_index]);
+            pcm_buffer[sample_count++] = pcm_sample;
             int32_t abs_sample = pcm_sample < 0 ? -(int32_t)pcm_sample : (int32_t)pcm_sample; // convert to absolute value to avoid int16_min overflow
             if(abs_sample > peak) {
                 peak = abs_sample;
@@ -83,10 +90,10 @@ static void inmp441_rx_task(void *arg)
         uint8_t magnitude = (uint8_t)(peak >> 7);
         push_level(magnitude);
 
-        // Pass converted samples to the stream buffer. 
+        // Pass converted samples to the stream buffer.
         // If full, the newest samples are dropped
         // timeout of 0 means "don't wait, just drop the data" if the buffer is full, which is what we want to avoid blocking the task and keep it real-time.
-        xStreamBufferSend(pcm_stream_buffer, pcm_buffer, n * sizeof(int16_t), 0);
+        xStreamBufferSend(pcm_stream_buffer, pcm_buffer, sample_count * sizeof(int16_t), 0);
     }
 }
 
