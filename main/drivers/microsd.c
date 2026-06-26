@@ -78,7 +78,14 @@ size_t microsd_count_files(const char *path)
     }
 
     size_t count = 0;
-    while(readdir(dir) != NULL) {
+    struct dirent *entry;
+    while((entry = readdir(dir)) != NULL) {
+        // Skip hidden entries: ".", "..", and metadata files like macOS
+        // AppleDouble sidecars (._0000.wav) and .DS_Store. Counting these
+        // would double the clip total and corrupt clip numbering.
+        if(entry->d_name[0] == '.') {
+            continue;
+        }
         count++;
     }
     closedir(dir);
