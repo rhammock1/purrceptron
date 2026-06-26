@@ -22,4 +22,5 @@ esp_err_t microsd_seek(FILE *file, long offset, int whence);
 esp_err_t microsd_close(FILE *file);
 
 size_t microsd_count_files(const char *path);
+size_t microsd_next_index(const char *path);
 

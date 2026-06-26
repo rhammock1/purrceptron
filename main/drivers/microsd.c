@@ -2,6 +2,7 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <stdlib.h>
 #include "esp_log.h"
 #include "esp_vfs_fat.h"
 #include "sdmmc_cmd.h"
@@ -90,6 +91,31 @@ size_t microsd_count_files(const char *path)
     }
     closedir(dir);
     return count;
+}
+
+size_t microsd_next_index(const char *path)
+{
+    char full_path[64];
+    build_path(full_path, sizeof(full_path), path);
+    DIR *dir = opendir(full_path);
+    if (dir == NULL) {
+        ESP_LOGW(TAG, "Likely that directory %s does not exist: %s", full_path, strerror(errno));
+        return 0;
+    }
+    long max_index = -1;
+    struct dirent *entry;
+    while((entry = readdir(dir)) != NULL) {
+        if(entry->d_name[0] == '.') {
+            continue; // skip hidden entries
+        }
+        char *end = NULL;
+        long index = strtol(entry->d_name, &end, 10); // parse leading integer of "NNNN.wav"
+        if(end != entry->d_name && index > max_index) {
+            max_index = index;
+        }
+    }
+    closedir(dir);
+    return (size_t)(max_index + 1); // next index is one more than the max found
 }
 
 static esp_err_t microsd_selftest(void)

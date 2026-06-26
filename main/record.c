@@ -85,8 +85,10 @@ static FILE *open_new_clip(cat_label_t cat)
         return NULL;
     }
 
+    size_t next_index = microsd_next_index(dir_path);
+
     char path[40];
-    snprintf(path, sizeof(path), "/%s/%04u.wav", folder, (unsigned)clip_counts[cat]);
+    snprintf(path, sizeof(path), "/%s/%04u.wav", folder, (unsigned)next_index);
     FILE *file = microsd_open(path, "wb");
     if(file == NULL) {
         return NULL;
