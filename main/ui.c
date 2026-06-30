@@ -19,7 +19,6 @@ uint8_t get_clip_count(cat_label_t label)
 
 void get_audio_levels(uint8_t *out, size_t n)
 {
-    // memset(out, 0, n); // TODO: implement this function to fill the provided buffer with audio level data for a simple VU meter visualization on the OLED while recording
     uint8_t mag[SSD1306_WIDTH];
     size_t want = n < SSD1306_WIDTH ? n : SSD1306_WIDTH;
     size_t got = inmp441_get_levels(mag, want);
