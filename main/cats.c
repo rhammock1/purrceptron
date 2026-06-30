@@ -20,8 +20,8 @@ const char *CAT_FOLDER_LABELS[] = {
 };
 
 // state variables
-static bool recording = false;
-static cat_label_t selected_cat = CAT_NONE;
+static volatile bool recording = false;
+static volatile cat_label_t selected_cat = CAT_NONE;
 
 bool is_recording(void)
 {
