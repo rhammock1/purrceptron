@@ -47,6 +47,10 @@ void display_task(void *arg)
         if(is_recording()) {
             ssd1306_draw_text(104, 0, "REC");
         }
+        if(record_get_fifo_overruns() > 0) {
+            // fifo overrun warning
+            ssd1306_draw_text(96, 0, "!");
+        }
 
         // Counts line: per-cat clip counts
         snprintf(line, sizeof(line), "K:%u T:%u L:%u R:%u", 

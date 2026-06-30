@@ -11,4 +11,5 @@ esp_err_t init_record(void);
 
 // called by ui.c's get_clip_count() 
 uint16_t record_get_clip_count(cat_label_t cat);
+uint32_t record_get_fifo_overruns(void);
 

@@ -160,6 +160,7 @@ static void record_producer_task(void *arg)
         if(recording && !was_recording) {
             // Rising edge: drain the pre-roll first
             ESP_LOGI(TAG, "Record button pressed, flushing pre-roll to FIFO");
+            fifo_overruns = 0; // fresh clip: clear the drop
             preroll_flush_to_fifo();
         }
         was_recording = recording;
@@ -229,6 +230,11 @@ static void record_writer_task(void *arg)
             file = NULL;
         }
     }
+}
+
+uint32_t record_get_fifo_overruns(void)
+{
+    return fifo_overruns;
 }
 
 uint16_t record_get_clip_count(cat_label_t cat)
