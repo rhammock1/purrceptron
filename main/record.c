@@ -190,7 +190,7 @@ static void record_writer_task(void *arg)
     static uint8_t block[WRITE_BLOCK_SAMPLES * sizeof(int16_t)];
     FILE *file = NULL;
     cat_label_t cat = CAT_NONE;
-    uint32_t total_samples = 0;
+    uint32_t total_bytes = 0;
     for(;;) {
         bool recording = is_recording();
         if(recording && file == NULL) {
@@ -201,7 +201,7 @@ static void record_writer_task(void *arg)
                 continue;
             }
             file = open_new_clip(cat);
-            total_samples = 0;
+            total_bytes = 0;
             if(file == NULL) {
                 ESP_LOGE(TAG, "Failed to open new clip file for cat %s", CAT_FOLDER_LABELS[cat]);
                 vTaskDelay(pdMS_TO_TICKS(50)); // retry while still recording
@@ -217,7 +217,7 @@ static void record_writer_task(void *arg)
         size_t got = xStreamBufferReceive(recording_fifo, block, sizeof(block), pdMS_TO_TICKS(20));
         if(got > 0) {
             size_t written = microsd_write(file, block, got);
-            total_samples += written;
+            total_bytes += written;
             if(written < got) {
                 // write fault, abort the clip
                 ESP_LOGW(TAG, "Failed to write all bytes to SD card: wrote %u of %u", (unsigned)written, (unsigned)got);
@@ -226,7 +226,7 @@ static void record_writer_task(void *arg)
             }
         } else if(!recording) {
             // Falling edge, finalize the clip
-            finalize_clip(file, cat, total_samples);
+            finalize_clip(file, cat, total_bytes);
             file = NULL;
         }
     }
