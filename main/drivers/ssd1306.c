@@ -152,47 +152,6 @@ void ssd1306_draw_text(uint8_t x, uint8_t y, const char *string)
     }
 }
 
-static esp_err_t ssd1306_draw_test(void) {
-    ssd1306_clear();
-    for(uint8_t x = 0; x < SSD1306_WIDTH; x++) {
-      // bottom + top edges
-      ssd1306_draw_pixel(x, 0, true);
-      ssd1306_draw_pixel(x, SSD1306_HEIGHT - 1, true);
-    }
-    for(uint8_t y = 0; y < SSD1306_HEIGHT; y++) {
-      // left + right edges
-      ssd1306_draw_pixel(0, y, true);
-      ssd1306_draw_pixel(SSD1306_WIDTH - 1, y, true);
-    }
-    for(uint8_t x = 2; x < SSD1306_WIDTH - 2; x++) {
-      // checkerboard pattern
-      for(uint8_t y = 2; y < SSD1306_HEIGHT - 2; y++) {
-        if(((x ^ y) & 1) == 0) {
-          ssd1306_draw_pixel(x, y, true);
-        }
-      }
-    }
-    esp_err_t err = ssd1306_flush();
-    if(err != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to flush checkerboard pattern to SSD1306: %s", esp_err_to_name(err));
-        return err;
-    }
-
-    // three second delay to visually confirm the test pattern, then clear the screen for normal use
-    vTaskDelay(pdMS_TO_TICKS(3000));
-
-    ssd1306_clear();
-    ssd1306_draw_text(0, 0, "PURRCEPTRON 0123456789");
-    ssd1306_draw_text(0, 8, "Kitty, Todd, Lady, Roxy");
-    ssd1306_draw_text(0, 16, "K:0, T:0, L:0, R:0  (REC)");
-    err = ssd1306_flush();
-    if(err != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to flush text to SSD1306: %s", esp_err_to_name(err));
-        return err;
-    }
-    return ESP_OK;
-}
-
 esp_err_t ssd1306_draw_splashscreen(void)
 {
     ssd1306_clear();
