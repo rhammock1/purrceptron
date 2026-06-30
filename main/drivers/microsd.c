@@ -11,7 +11,6 @@
 #include "microsd.h"
 
 static const char *TAG = "MICROSD";
-static const bool TEST = false; // set to true to run a self-test on init
 
 static sdmmc_card_t *card = NULL;
 
@@ -118,28 +117,6 @@ size_t microsd_next_index(const char *path)
     return (size_t)(max_index + 1); // next index is one more than the max found
 }
 
-static esp_err_t microsd_selftest(void)
-{
-    esp_err_t err = microsd_mkdir("/selftest");
-    if(err != ESP_OK) {
-        return err;
-    }
-    FILE *test_file = microsd_open("/selftest/test.txt", "w");
-    if (test_file != NULL) {
-        const char *msg = "Hello, MicroSD!";
-        size_t written = microsd_write(test_file, msg, strlen(msg));
-        err = microsd_close(test_file);
-        if (err != ESP_OK) {
-            return err;
-        }
-        size_t count = microsd_count_files("/selftest");
-        ESP_LOGI(TAG, "Wrote %u bytes to test file. Counted %u files in /selftest", written, count);
-    } else {
-        ESP_LOGE(TAG, "Failed to open test file for writing");
-        return ESP_FAIL;
-    }
-}
-
 esp_err_t init_microsd(void)
 {
     esp_vfs_fat_sdmmc_mount_config_t mount_config = {
@@ -181,15 +158,6 @@ esp_err_t init_microsd(void)
     ESP_LOGI(TAG, "Filesystem mounted at %s", MICROSD_MOUNT_POINT);
     sdmmc_card_print_info(stdout, card); // logs name, type, capacity, etc.
 
-    if(TEST) {
-        err = microsd_selftest();
-        if (err != ESP_OK) {
-            ESP_LOGE(TAG, "Self-test failed: %s", esp_err_to_name(err));
-            return err;
-        }
-    }
-
     return ESP_OK;
 }
-
 

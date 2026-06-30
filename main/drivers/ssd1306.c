@@ -11,8 +11,6 @@
 #define OLED_I2C_TIMEOUT_MS 500
 
 static const char *TAG = "SSD1306";
-static bool TEST = false; // set to true to draw a test pattern on the OLED during initialization, then clear it for normal use
-
 // represents the physical bus
 static i2c_master_bus_handle_t i2c_bus = NULL;
 // represents the device on the bus
@@ -258,18 +256,9 @@ esp_err_t init_ssd1306(void)
         return err;
     }
 
-    // TEMP
-    if(TEST) {
-        err = ssd1306_draw_test();
-        if(err != ESP_OK) {
-            ESP_LOGE(TAG, "Failed to flush framebuffer to SSD1306: %s", esp_err_to_name(err));
-            return err;
-        }
-    } else {
-        err = ssd1306_draw_splashscreen();
-        if(err != ESP_OK) {
-            return err;
-        }
+    err = ssd1306_draw_splashscreen();
+    if(err != ESP_OK) {
+        return err;
     }
 
     ESP_LOGI(TAG, "SSD1306 initialized successfully");
