@@ -5,8 +5,9 @@
 #include "portmacro.h"
 #include "inmp441.h"
 
-// INMP441: 24 valid bits MSB aligned in a 32bit word.
-// shift right by 16 takes the top 16 bits.
+// INMP441: 24 valid bits, MSB-aligned in a 32-bit word. A straight >>16 would give a
+// plain 16-bit sample; we shift right by 11 instead, keeping ~5 extra low bits as
+// software gain (meows are quiet) before the int16 clamp in convert_sample().
 #define RAW_SHIFT 11
 #define GAIN 1
 #define STREAM_BUFFER_SIZE (CHUNK_FRAMES * sizeof(int16_t) * 4) // enough space for 4 chunks
